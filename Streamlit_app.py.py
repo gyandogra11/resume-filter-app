@@ -1,142 +1,148 @@
-# streamlit_app.py
-
+import streamlit as st
+import pandas as pd
 import os
 import re
 import pytesseract
-import shutil
-import csv
-from datetime import datetime
 from pdf2image import convert_from_path
 from PIL import Image
-import streamlit as st
-from openpyxl import Workbook
+import shutil
+from datetime import datetime
 
-# Tesseract path
-pytesseract.pytesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# --- Config ---
+st.set_page_config(page_title="Resume Filter | Medhaj Tech", page_icon="📄", layout="wide")
 
-# Folder setup
+# --- Custom Styling ---
+st.markdown("""
+    <style>
+    .main { background-color: #f7fdf7; }
+    .stButton > button {
+        background-color: #198754;
+        color: white;
+        font-weight: 600;
+        border-radius: 6px;
+        padding: 8px 16px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Title ---
+st.title("📄 Resume Filtering Dashboard")
+st.markdown("Upload resumes and filter candidates based on your criteria. Built by **Medhaj Techno Concepts**.")
+st.markdown("---")
+
+# --- Sidebar Inputs ---
+with st.sidebar:
+    st.header("🎯 Filter Criteria")
+    skills_input = st.text_input("Required Skills (comma separated)").lower().split(',')
+    min_experience = st.number_input("Minimum Experience (years)", min_value=0.0, step=0.5)
+    qualification_input = st.selectbox("Qualification", ["All", "Undergraduate", "Postgraduate"]).lower()
+    location_input = st.text_input("Preferred Location (or leave blank)").strip().lower()
+    specialization_input = st.text_input("Specialization (e.g. civil, electrical)").strip().lower()
+    certifications_input = st.text_input("Certifications (comma separated, optional)").lower().split(',')
+    certifications_input = [c.strip() for c in certifications_input if c.strip()]
+    company_input = st.text_input("Last Working Company (or leave blank)").strip().lower()
+    match_all_skills = st.checkbox("Require all listed skills to match", value=True)
+    start = st.button("🚀 Start Filtering")
+
+# --- Folder Setup ---
 resume_folder = "resumes"
 output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
 
-# Experience extractor
-def extract_experience(text):
-    text_lower = text.lower()
-    experience_years = 0
+# --- Regex ---
+email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
+phone_pattern = r'(\+91[\-\s]?)?[789]\d{9}|\(?\d{3,4}\)?[\s\-]?\d{6,8}'
+experience_pattern = r'(\d+(?:\.\d+)?|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|twenty|thirty))\s*(years?|yrs?)'
 
-    numeric = re.findall(r'(\d+(?:\.\d+)?)\s*(\+)?\s*(years?|yrs?)', text_lower)
-    for match in numeric:
-        try:
-            experience_years = max(experience_years, float(match[0]))
-        except:
-            continue
-
-    words_to_numbers = {
-        'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
-        'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18,
-        'nineteen': 19, 'twenty': 20
-    }
-    for word, val in words_to_numbers.items():
-        if re.search(rf"\\b{word}\\b\\s*(plus)?\\s*(years?|yrs?)", text_lower):
-            experience_years = max(experience_years, val)
-
-    parens = re.findall(r'\((\d{1,2})\)', text_lower)
-    for p in parens:
-        try:
-            val = int(p)
-            if val >= 5:
-                experience_years = max(experience_years, val)
-        except:
-            continue
-
-    for word, val in words_to_numbers.items():
-        if f"over {word}" in text_lower or f"more than {word}" in text_lower:
-            experience_years = max(experience_years, val)
-
-    return experience_years
-
-# Text from PDF
+# --- OCR Function ---
 def extract_text_from_pdf(pdf_path):
+    text = ""
     try:
         images = convert_from_path(pdf_path)
-        text = ""
-        for img in images:
-            text += pytesseract.image_to_string(img)
-        return text
+        for image in images:
+            text += pytesseract.image_to_string(image)
     except Exception as e:
-        return ""
+        st.error(f"Error reading {os.path.basename(pdf_path)}: {e}")
+    return text.lower()
 
-# Resume matching
-def analyze_resume(text, filters):
-    text_lower = text.lower()
+# --- Analyze Resume ---
+def analyze_resume(text):
+    email = re.search(email_pattern, text)
+    phone = re.search(phone_pattern, text)
+    experience_matches = re.findall(experience_pattern, text)
+    
+    experience_years = 0
+    for e in experience_matches:
+        try:
+            experience_years = max(experience_years, float(e[0]))
+        except:
+            word_to_num = {
+                'one':1, 'two':2, 'three':3, 'four':4, 'five':5,
+                'six':6, 'seven':7, 'eight':8, 'nine':9, 'ten':10,
+                'eleven':11, 'twelve':12, 'thirteen':13, 'fourteen':14,
+                'fifteen':15, 'twenty':20, 'thirty':30
+            }
+            if e[0].lower() in word_to_num:
+                experience_years = max(experience_years, word_to_num[e[0].lower()])
 
-    skills_found = [s for s in filters['skills'] if s in text_lower]
-    has_required_skills = (len(skills_found) >= len(filters['skills']) if filters['match_all'] else len(skills_found) > 0)
+    skill_match = all(skill.strip() in text for skill in skills_input if skill.strip()) if match_all_skills else any(skill.strip() in text for skill in skills_input if skill.strip())
 
-    exp = extract_experience(text)
-    has_enough_exp = exp >= filters['min_exp']
+    undergrad = any(k in text for k in ['b.tech', 'btech', 'b.e', 'be', 'bachelor'])
+    postgrad = any(k in text for k in ['m.tech', 'mtech', 'm.e', 'me', 'mba', 'msc', 'm.sc', 'master'])
 
-    qual = filters['qualification']
-    is_undergrad = any(k in text_lower for k in ['b.tech', 'b.e', 'bachelor'])
-    is_postgrad = any(k in text_lower for k in ['m.tech', 'mba', 'msc', 'master'])
-    qual_match = qual == 'all' or (qual == 'undergraduate' and is_undergrad) or (qual == 'postgraduate' and is_postgrad)
+    matches_qualification = (
+        qualification_input == 'all' or
+        (qualification_input == 'undergraduate' and undergrad) or
+        (qualification_input == 'postgraduate' and postgrad)
+    )
 
-    loc_match = filters['location'] == 'all' or filters['location'] in text_lower
-    spec_match = any(s in text_lower for s in filters['specialization'].split())
-    cert_match = True if not filters['certifications'] else any(c in text_lower for c in filters['certifications'])
-    comp_match = filters['company'] == 'all' or filters['company'] in text_lower
+    matches_location = location_input in text if location_input else True
+    matches_specialization = specialization_input in text if specialization_input else True
+    matches_certification = any(cert in text for cert in certifications_input) if certifications_input else True
+    matches_company = company_input in text if company_input else True
 
-    match = all([has_required_skills, has_enough_exp, qual_match, loc_match, spec_match, cert_match, comp_match])
-
-    return match, exp, skills_found
-
-# Streamlit UI
-st.title("Resume Filter App")
-st.markdown("Upload resumes in the 'resumes/' folder and click Filter.")
-
-with st.form("filter_form"):
-    skills = st.text_input("Required Skills (comma-separated)").lower().split(',')
-    match_all = st.checkbox("Should ALL skills match?", value=False)
-    min_exp = st.number_input("Minimum Experience (Years)", min_value=0.0, value=0.0)
-    qualification = st.selectbox("Qualification", ["all", "undergraduate", "postgraduate"])
-    location = st.text_input("Preferred Location (or 'all')", value="all").lower()
-    specialization = st.text_input("Specialization", value="").lower()
-    certifications = st.text_input("Certifications (comma-separated, optional)").lower().split(',')
-    company = st.text_input("Last Working Company (or 'all')", value="all").lower()
-    submit = st.form_submit_button("Filter Resumes")
-
-if submit:
-    st.info("Processing resumes...")
-
-    filters = {
-        'skills': [s.strip() for s in skills if s.strip()],
-        'match_all': match_all,
-        'min_exp': min_exp,
-        'qualification': qualification,
-        'location': location,
-        'specialization': specialization,
-        'certifications': [c.strip() for c in certifications if c.strip()],
-        'company': company
+    return {
+        "email": email.group(0) if email else "Not found",
+        "phone": phone.group(0) if phone else "Not found",
+        "experience": experience_years,
+        "matches": all([
+            experience_years >= min_experience,
+            skill_match,
+            matches_qualification,
+            matches_location,
+            matches_specialization,
+            matches_certification,
+            matches_company
+        ])
     }
 
-    matched = []
-    for file in os.listdir(resume_folder):
-        if file.lower().endswith(".pdf"):
-            path = os.path.join(resume_folder, file)
-            text = extract_text_from_pdf(path)
-            is_match, experience, skills_found = analyze_resume(text, filters)
+# --- Process Resumes ---
+if start:
+    st.info("🔄 Scanning resumes...")
+    csv_rows = []
+    csv_header = ["Filename", "Email", "Phone", "Experience (yrs)"]
 
-            if is_match:
-                shutil.copy(path, os.path.join(output_folder, file))
-                matched.append({
-                    'Filename': file,
-                    'Experience': experience,
-                    'Skills': ", ".join(skills_found)
-                })
+    for filename in os.listdir(resume_folder):
+        if filename.endswith(".pdf"):
+            path = os.path.join(resume_folder, filename)
+            raw_text = extract_text_from_pdf(path)
+            result = analyze_resume(raw_text)
 
-    if matched:
-        st.success(f"{len(matched)} resumes matched your criteria.")
-        st.dataframe(matched)
+            if result["matches"]:
+                shutil.copy(path, output_folder)
+                csv_rows.append([
+                    filename,
+                    result["email"],
+                    result["phone"],
+                    result["experience"]
+                ])
+
+    if csv_rows:
+        st.success(f"✅ {len(csv_rows)} resumes matched and saved in 'selected/'")
+        df = pd.DataFrame(csv_rows, columns=csv_header)
+        st.dataframe(df, use_container_width=True)
+        csv_data = df.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download CSV", data=csv_data, file_name="filtered_candidates.csv", mime="text/csv")
     else:
-        st.warning("No matching resumes found.")
+        st.warning("❌ No resumes matched the given criteria.")
