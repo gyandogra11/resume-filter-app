@@ -8,13 +8,17 @@ from PIL import Image
 import shutil
 from datetime import datetime
 
-# --- Config ---
-st.set_page_config(page_title="Resume Filter | Medhaj Tech", page_icon="📄", layout="wide")
+# --- Streamlit Configuration ---
+st.set_page_config(
+    page_title="Resume Filter | Medhaj Tech",
+    page_icon="📄",
+    layout="wide"
+)
 
-# --- Custom Styling ---
+# --- Custom Theme Styling ---
 st.markdown("""
     <style>
-    .main { background-color: #f7fdf7; }
+    .main { background-color: #f5fdf5; }
     .stButton > button {
         background-color: #198754;
         color: white;
@@ -25,24 +29,24 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Title ---
-st.title("📄 Resume Filtering Dashboard")
-st.markdown("Upload resumes and filter candidates based on your criteria. Built by **Medhaj Techno Concepts**.")
+# --- Title & Header ---
+st.title("Resume Filtering Dashboard - Medhaj Tech")
+st.markdown("Upload and filter resumes based on your criteria. HR tool for intelligent shortlisting.")
 st.markdown("---")
 
 # --- Sidebar Inputs ---
 with st.sidebar:
-    st.header("🎯 Filter Criteria")
+    st.header("Filter Criteria")
     skills_input = st.text_input("Required Skills (comma separated)").lower().split(',')
     min_experience = st.number_input("Minimum Experience (years)", min_value=0.0, step=0.5)
     qualification_input = st.selectbox("Qualification", ["All", "Undergraduate", "Postgraduate"]).lower()
-    location_input = st.text_input("Preferred Location (or leave blank)").strip().lower()
+    location_input = st.text_input("Preferred Location (optional)").strip().lower()
     specialization_input = st.text_input("Specialization (e.g. civil, electrical)").strip().lower()
     certifications_input = st.text_input("Certifications (comma separated, optional)").lower().split(',')
     certifications_input = [c.strip() for c in certifications_input if c.strip()]
-    company_input = st.text_input("Last Working Company (or leave blank)").strip().lower()
+    company_input = st.text_input("Last Working Company (optional)").strip().lower()
     match_all_skills = st.checkbox("Require all listed skills to match", value=True)
-    start = st.button("🚀 Start Filtering")
+    start = st.button("Start Filtering")
 
 # --- Folder Setup ---
 resume_folder = "resumes"
@@ -50,12 +54,12 @@ output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
 
-# --- Regex ---
+# --- Regex Patterns ---
 email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
 phone_pattern = r'(\+91[\-\s]?)?[789]\d{9}|\(?\d{3,4}\)?[\s\-]?\d{6,8}'
-experience_pattern = r'(\d+(?:\.\d+)?|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|twenty|thirty))\s*(years?|yrs?)'
+experience_pattern = r'(\d+(?:\.\d+)?|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fifteen|twenty|thirty))\s*(years?|yrs?)'
 
-# --- OCR Function ---
+# --- Extract Text via OCR ---
 def extract_text_from_pdf(pdf_path):
     text = ""
     try:
@@ -66,12 +70,12 @@ def extract_text_from_pdf(pdf_path):
         st.error(f"Error reading {os.path.basename(pdf_path)}: {e}")
     return text.lower()
 
-# --- Analyze Resume ---
+# --- Resume Matching Logic ---
 def analyze_resume(text):
     email = re.search(email_pattern, text)
     phone = re.search(phone_pattern, text)
     experience_matches = re.findall(experience_pattern, text)
-    
+
     experience_years = 0
     for e in experience_matches:
         try:
@@ -80,7 +84,7 @@ def analyze_resume(text):
             word_to_num = {
                 'one':1, 'two':2, 'three':3, 'four':4, 'five':5,
                 'six':6, 'seven':7, 'eight':8, 'nine':9, 'ten':10,
-                'eleven':11, 'twelve':12, 'thirteen':13, 'fourteen':14,
+                'eleven':11, 'twelve':12, 'thirteen':13,
                 'fifteen':15, 'twenty':20, 'thirty':30
             }
             if e[0].lower() in word_to_num:
@@ -117,9 +121,9 @@ def analyze_resume(text):
         ])
     }
 
-# --- Process Resumes ---
+# --- Resume Processing Loop ---
 if start:
-    st.info("🔄 Scanning resumes...")
+    st.info("Scanning resumes...")
     csv_rows = []
     csv_header = ["Filename", "Email", "Phone", "Experience (yrs)"]
 
@@ -139,10 +143,10 @@ if start:
                 ])
 
     if csv_rows:
-        st.success(f"✅ {len(csv_rows)} resumes matched and saved in 'selected/'")
+        st.success(f"{len(csv_rows)} resumes matched and saved in 'selected/'")
         df = pd.DataFrame(csv_rows, columns=csv_header)
         st.dataframe(df, use_container_width=True)
         csv_data = df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 Download CSV", data=csv_data, file_name="filtered_candidates.csv", mime="text/csv")
+        st.download_button("Download CSV", data=csv_data, file_name="filtered_candidates.csv", mime="text/csv")
     else:
-        st.warning("❌ No resumes matched the given criteria.")
+        st.warning("No resumes matched the given criteria.")
