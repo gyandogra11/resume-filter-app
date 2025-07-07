@@ -30,8 +30,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Title & Header ---
-st.title("Resume Filtering Dashboard - Medhaj Tech")
-st.markdown("Upload and filter resumes based on your criteria. HR tool for intelligent shortlisting.")
+st.title("Resume Filtering Dashboard - Medhaj Techno Concepts Pvt. Ltd.")
+st.markdown("Upload and filter resumes based on your criteria.")
 st.markdown("---")
 
 # --- Sidebar Inputs ---
