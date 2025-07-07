@@ -8,58 +8,47 @@ from PIL import Image
 import shutil
 from datetime import datetime
 
-# --- Streamlit Configuration ---
+# Configure Streamlit page
 st.set_page_config(
-    page_title="Resume Filter | Medhaj Tech",
-    page_icon="📄",
+    page_title="Resume Filter - Medhaj Techno Concepts Pvt. Ltd",
     layout="wide"
 )
 
-# --- Custom Theme Styling ---
-st.markdown("""
-    <style>
-    .main { background-color: #f5fdf5; }
-    .stButton > button {
-        background-color: #198754;
-        color: white;
-        font-weight: 600;
-        border-radius: 6px;
-        padding: 8px 16px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- Title & Header ---
-st.title("Resume Filtering Dashboard - Medhaj Techno Concepts Pvt. Ltd.")
+# Title and header
+st.title("Resume Filtering Dashboard – Medhaj Techno Concepts Pvt. Ltd.")
 st.markdown("Upload and filter resumes based on your criteria.")
 st.markdown("---")
 
-# --- Sidebar Inputs ---
-with st.sidebar:
-    st.header("Filter Criteria")
+# Input section (centered)
+col1, col2 = st.columns(2)
+
+with col1:
     skills_input = st.text_input("Required Skills (comma separated)").lower().split(',')
     min_experience = st.number_input("Minimum Experience (years)", min_value=0.0, step=0.5)
     qualification_input = st.selectbox("Qualification", ["All", "Undergraduate", "Postgraduate"]).lower()
-    location_input = st.text_input("Preferred Location (optional)").strip().lower()
     specialization_input = st.text_input("Specialization (e.g. civil, electrical)").strip().lower()
+
+with col2:
+    location_input = st.text_input("Preferred Location (optional)").strip().lower()
     certifications_input = st.text_input("Certifications (comma separated, optional)").lower().split(',')
     certifications_input = [c.strip() for c in certifications_input if c.strip()]
     company_input = st.text_input("Last Working Company (optional)").strip().lower()
     match_all_skills = st.checkbox("Require all listed skills to match", value=True)
-    start = st.button("Start Filtering")
 
-# --- Folder Setup ---
+start = st.button("Start Filtering")
+
+# Folder setup
 resume_folder = "resumes"
 output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
 
-# --- Regex Patterns ---
+# Regex patterns
 email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
 phone_pattern = r'(\+91[\-\s]?)?[789]\d{9}|\(?\d{3,4}\)?[\s\-]?\d{6,8}'
 experience_pattern = r'(\d+(?:\.\d+)?|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fifteen|twenty|thirty))\s*(years?|yrs?)'
 
-# --- Extract Text via OCR ---
+# OCR text extraction
 def extract_text_from_pdf(pdf_path):
     text = ""
     try:
@@ -70,7 +59,7 @@ def extract_text_from_pdf(pdf_path):
         st.error(f"Error reading {os.path.basename(pdf_path)}: {e}")
     return text.lower()
 
-# --- Resume Matching Logic ---
+# Resume analysis function
 def analyze_resume(text):
     email = re.search(email_pattern, text)
     phone = re.search(phone_pattern, text)
@@ -121,9 +110,9 @@ def analyze_resume(text):
         ])
     }
 
-# --- Resume Processing Loop ---
+# Resume filtering
 if start:
-    st.info("Scanning resumes...")
+    st.info("Processing resumes...")
     csv_rows = []
     csv_header = ["Filename", "Email", "Phone", "Experience (yrs)"]
 
@@ -143,7 +132,7 @@ if start:
                 ])
 
     if csv_rows:
-        st.success(f"{len(csv_rows)} resumes matched and saved in 'selected/'")
+        st.success(f"{len(csv_rows)} resumes matched and saved in 'selected/' folder.")
         df = pd.DataFrame(csv_rows, columns=csv_header)
         st.dataframe(df, use_container_width=True)
         csv_data = df.to_csv(index=False).encode("utf-8")
