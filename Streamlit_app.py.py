@@ -8,18 +8,18 @@ from PIL import Image
 import shutil
 from datetime import datetime
 
-# Configure Streamlit page
+# Set page layout
 st.set_page_config(
     page_title="Resume Filter - Medhaj Techno Concepts Pvt. Ltd",
     layout="wide"
 )
 
-# Title and header
-st.title("Resume Filtering Dashboard – Medhaj Techno Concepts Pvt. Ltd.")
+# Heading
+st.title("Resume Filtering Dashboard – Medhaj Techno Concepts Pvt. Ltd")
 st.markdown("Upload and filter resumes based on your criteria.")
 st.markdown("---")
 
-# Input section (centered)
+# Centered layout with two columns
 col1, col2 = st.columns(2)
 
 with col1:
@@ -37,7 +37,7 @@ with col2:
 
 start = st.button("Start Filtering")
 
-# Folder setup
+# Folders setup
 resume_folder = "resumes"
 output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
@@ -59,7 +59,7 @@ def extract_text_from_pdf(pdf_path):
         st.error(f"Error reading {os.path.basename(pdf_path)}: {e}")
     return text.lower()
 
-# Resume analysis function
+# Resume filtering function
 def analyze_resume(text):
     email = re.search(email_pattern, text)
     phone = re.search(phone_pattern, text)
@@ -76,8 +76,9 @@ def analyze_resume(text):
                 'eleven':11, 'twelve':12, 'thirteen':13,
                 'fifteen':15, 'twenty':20, 'thirty':30
             }
-            if e[0].lower() in word_to_num:
-                experience_years = max(experience_years, word_to_num[e[0].lower()])
+            word = e[0].lower()
+            if word in word_to_num:
+                experience_years = max(experience_years, word_to_num[word])
 
     skill_match = all(skill.strip() in text for skill in skills_input if skill.strip()) if match_all_skills else any(skill.strip() in text for skill in skills_input if skill.strip())
 
@@ -110,7 +111,7 @@ def analyze_resume(text):
         ])
     }
 
-# Resume filtering
+# Run filtering
 if start:
     st.info("Processing resumes...")
     csv_rows = []
