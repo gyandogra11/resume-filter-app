@@ -8,40 +8,50 @@ from PIL import Image
 import shutil
 from datetime import datetime
 
-# Set page layout
+# Set Streamlit layout and theme
 st.set_page_config(
     page_title="Resume Filter - Medhaj Techno Concepts Pvt. Ltd",
     layout="wide"
 )
 
-# Heading
+# Title
 st.title("Resume Filtering Dashboard – Medhaj Techno Concepts Pvt. Ltd")
 st.markdown("Upload and filter resumes based on your criteria.")
 st.markdown("---")
 
-# Centered layout with two columns
-col1, col2 = st.columns(2)
+# 🟩 Custom CSS for green button
+st.markdown("""
+    <style>
+        div.stButton > button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            padding: 0.5em 1.5em;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-with col1:
-    skills_input = st.text_input("Required Skills (comma separated)").lower().split(',')
-    min_experience = st.number_input("Minimum Experience (years)", min_value=0.0, step=0.5)
-    qualification_input = st.selectbox("Qualification", ["All", "Undergraduate", "Postgraduate"]).lower()
-    specialization_input = st.text_input("Specialization (e.g. civil, electrical)").strip().lower()
-
-with col2:
-    location_input = st.text_input("Preferred Location (optional)").strip().lower()
-    certifications_input = st.text_input("Certifications (comma separated, optional)").lower().split(',')
-    certifications_input = [c.strip() for c in certifications_input if c.strip()]
-    company_input = st.text_input("Last Working Company (optional)").strip().lower()
-    match_all_skills = st.checkbox("Require all listed skills to match", value=True)
-
-start = st.button("Start Filtering")
-
-# Folders setup
+# Folder setup
 resume_folder = "resumes"
 output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
+
+# 📄 Input Form (One below the other)
+skills_input = st.text_input("Required Skills (comma separated)").lower().split(',')
+min_experience = st.number_input("Minimum Experience (years)", min_value=0.0, step=0.5)
+qualification_input = st.selectbox("Qualification", ["All", "Undergraduate", "Postgraduate"]).lower()
+location_input = st.text_input("Preferred Location (optional)").strip().lower()
+specialization_input = st.text_input("Specialization (e.g. civil, electrical)").strip().lower()
+certifications_input = st.text_input("Certifications (comma separated, optional)").lower().split(',')
+certifications_input = [c.strip() for c in certifications_input if c.strip()]
+company_input = st.text_input("Last Working Company (optional)").strip().lower()
+match_all_skills = st.checkbox("Require all listed skills to match", value=True)
+
+# Button
+start = st.button("Start Filtering")
 
 # Regex patterns
 email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
@@ -59,7 +69,7 @@ def extract_text_from_pdf(pdf_path):
         st.error(f"Error reading {os.path.basename(pdf_path)}: {e}")
     return text.lower()
 
-# Resume filtering function
+# Resume filtering logic
 def analyze_resume(text):
     email = re.search(email_pattern, text)
     phone = re.search(phone_pattern, text)
@@ -111,7 +121,7 @@ def analyze_resume(text):
         ])
     }
 
-# Run filtering
+# Processing resumes
 if start:
     st.info("Processing resumes...")
     csv_rows = []
