@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+
+# Streamlit-generated files
+.streamlit/config.toml
+
+# Python cache
+*.pyc
+
+# Logs or debug files
+*.log
+
+# Excel output files
+*.xlsx
+
+# Uploaded resumes and filtered results
+resumes/
+selected/
+
+# Ignore hidden files
+.*
+!.gitignore
