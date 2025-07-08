@@ -7,12 +7,14 @@ import pandas as pd
 from datetime import datetime
 from openpyxl import Workbook
 
+# Create folders if not present
 resume_folder = "resumes"
 output_folder = "selected"
 os.makedirs(resume_folder, exist_ok=True)
 os.makedirs(output_folder, exist_ok=True)
 
 st.set_page_config(page_title="Resume Filter | Medhaj", layout="centered")
+
 st.markdown("""
     <h1 style='text-align: center;'>Resume Filtering Dashboard – Medhaj Techno Concepts Pvt. Ltd</h1>
     <p style='text-align: center;'>Upload and filter resumes based on your criteria.</p>
@@ -65,7 +67,10 @@ def analyze_resume(text):
     company_match = company_input in text_lower if company_input else True
     experience_match = experience_years >= min_experience
 
-    matched = all([skills_match, qual_match, location_match, specialization_match, cert_match, company_match, experience_match])
+    matched = all([
+        skills_match, qual_match, location_match,
+        specialization_match, cert_match, company_match, experience_match
+    ])
 
     return {
         "email": email.group(0) if email else "Not found",
@@ -98,14 +103,15 @@ if st.button("Start Filtering"):
         st.success(f"{len(results)} resumes matched your criteria.")
         df = pd.DataFrame(results)
         st.dataframe(df)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"filtered_candidates_{timestamp}.xlsx"
+
+        filename = f"filtered_candidates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         wb = Workbook()
         ws = wb.active
         ws.append(["Filename", "Email", "Phone", "Experience (yrs)", "Skills Found"])
         for row in results:
             ws.append([row["Filename"], row["Email"], row["Phone"], row["Experience (yrs)"], row["Skills Found"]])
         wb.save(filename)
+
         with open(filename, "rb") as f:
             st.download_button("Download Excel Report", f, file_name=filename)
     else:
