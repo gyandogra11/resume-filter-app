@@ -1,9 +1,9 @@
-services:
-  - type: web
-    name: resume-filter-app
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run main.py --server.port 10000 --server.enableCORS false
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+*.log
+*.xlsx
+resumes/
+selected/
