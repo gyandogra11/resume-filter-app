@@ -1,9 +1,9 @@
-_pycache_/
+__pycache__/
 *.pyc
 *.pyo
-*.pyd
-.env
 .venv/
+.env
+*.log
+*.xlsx
 resumes/
 selected/
-*.xlsx
